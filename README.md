@@ -6,3 +6,6 @@ Make sure `cargo` is installed before hand
 ```
 $ cargo run
 ```
+
+## Resources used
+- [Raylib for Graphics](https://crates.io/crates/raylib)
