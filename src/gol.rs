@@ -4,26 +4,40 @@ enum GolCells {
     Alive,
 }
 
+// The name 'gol' is an acronym for 'Game of Life'
 pub struct Gol {
     cells: Vec<GolCells>,
-    width: usize,
-    height: usize,
+    x_count: usize,
+    y_count: usize,
 }
 
 impl Gol {
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn new(x_count: usize, y_count: usize) -> Self {
         Self {
-            cells: vec![GolCells::Dead; width * height],
-            width,
-            height,
+            cells: vec![GolCells::Dead; x_count * y_count],
+            x_count,
+            y_count,
         }
+    }
+
+    pub fn get_x_count(&self) -> usize {
+        self.x_count
+    }
+
+    pub fn get_y_count(&self) -> usize {
+        self.y_count
+    }
+
+    pub fn is_alive(&self, col: usize, row: usize) -> bool {
+        let ind = self.coord_to_ind(col, row);
+        self.cells[ind] == GolCells::Alive
     }
 
     pub fn update(&mut self) {
         let mut to_be_alive: Vec<usize> = vec![];
         let mut to_be_dead: Vec<usize> = vec![];
-        for col in 0..self.width {
-            for row in 0..self.height {
+        for col in 0..self.x_count {
+            for row in 0..self.y_count {
                 let ind = self.coord_to_ind(col, row);
                 if self.apply_rule(col, row) {
                     to_be_alive.push(ind);
@@ -42,7 +56,16 @@ impl Gol {
         }
     }
 
-    pub fn apply_rule(&self, col: usize, row: usize) -> bool {
+    pub fn toggle(&mut self, col: usize, row: usize) {
+        let ind = self.coord_to_ind(col, row);
+        if self.cells[ind] == GolCells::Alive {
+            self.cells[ind] = GolCells::Dead;
+        } else {
+            self.cells[ind] = GolCells::Alive;
+        }
+    }
+
+    fn apply_rule(&self, col: usize, row: usize) -> bool {
         let neighbors = self.count_neighbors(col, row);
         let ind = self.coord_to_ind(col, row);
         let is_cell_alive = self.cells[ind] == GolCells::Alive;
@@ -73,31 +96,17 @@ impl Gol {
         neighbors
     }
 
-    fn is_alive(&self, col: usize, row: usize) -> bool {
-        let ind = self.coord_to_ind(col, row);
-        self.cells[ind] == GolCells::Alive
-    }
-
     fn is_in_bound(&self, num: i32, is_col: bool) -> bool {
         if num > 0 {
             return match is_col {
-                true => num < self.width as i32,
-                false => num < self.height as i32,
+                true => num < self.x_count as i32,
+                false => num < self.y_count as i32,
             };
         }
         false
     }
 
-    pub fn toggle(&mut self, col: usize, row: usize) {
-        let ind = self.coord_to_ind(col, row);
-        if self.cells[ind] == GolCells::Alive {
-            self.cells[ind] = GolCells::Dead;
-        } else {
-            self.cells[ind] = GolCells::Alive;
-        }
-    }
-
     fn coord_to_ind(&self, col: usize, row: usize) -> usize {
-        (col * self.width) + (row + 1)
+        (col * self.x_count) + row
     }
 }
