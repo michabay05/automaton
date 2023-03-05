@@ -13,21 +13,72 @@ fn main() {
         .vsync()
         .build();
 
-    let mut automaton = gol::Gol::new(100, 100);
+    let count = 100;
+    let mut automaton = gol::Gol::new(count, count);
+    automaton.randomize();
 
     while !rl.window_should_close() {
         // Update phase
-        update(&mut automaton);
+        update(&mut automaton, &rl);
         // Render phase
         let d = rl.begin_drawing(&thread);
         render(&automaton, d);
     }
 }
 
-fn update(automaton: &mut gol::Gol) {}
+enum Actions {
+    Pause,
+    Restart,
+    Randomize,
+    Clicked(i32, i32),
+    Nothing,
+}
+
+fn handle_input(rl: &RaylibHandle) -> Actions {
+    if rl.is_key_pressed(KeyboardKey::KEY_SPACE) {
+        return Actions::Pause;
+    }
+    if rl.is_key_pressed(KeyboardKey::KEY_R) {
+        return Actions::Restart;
+    }
+    if rl.is_key_pressed(KeyboardKey::KEY_A) {
+        return Actions::Randomize;
+    }
+    if rl.is_mouse_button_pressed(MouseButton::MOUSE_LEFT_BUTTON) {
+        return Actions::Clicked(rl.get_mouse_x(), rl.get_mouse_y());
+    }
+    Actions::Nothing
+}
+
+fn update(automaton: &mut gol::Gol, rl: &RaylibHandle) {
+    let mut mouse_pos = Vector2::new(0.0, 0.0);
+    match handle_input(rl) {
+        Actions::Pause => automaton.paused = !automaton.paused,
+        Actions::Restart => automaton.restart(),
+        Actions::Randomize => {
+            automaton.randomize();
+            automaton.paused = true;
+        }
+        Actions::Clicked(mouse_x, mouse_y) => {
+            mouse_pos.x = mouse_x as f32;
+            mouse_pos.y = mouse_y as f32;
+        }
+        Actions::Nothing => {}
+    };
+    if !automaton.paused {
+        automaton.update();
+    }
+}
 
 fn render(automaton: &gol::Gol, mut d: RaylibDrawHandle) {
+    let min_side = if d.get_screen_width() > d.get_screen_height() {
+        d.get_screen_height()
+    } else {
+        d.get_screen_width()
+    } as f32;
     let cell_size = Vector2::new(
+        // min_side / automaton.get_x_count() as f32,
+        // min_side / automaton.get_y_count() as f32,
         d.get_screen_width() as f32 / automaton.get_x_count() as f32,
         d.get_screen_height() as f32 / automaton.get_y_count() as f32,
     );
@@ -44,10 +95,7 @@ fn render(automaton: &gol::Gol, mut d: RaylibDrawHandle) {
                 false => DEAD_COLOR,
             };
             d.draw_rectangle_v(
-                Vector2::new(
-                    (x * cell_size.x as usize) as f32,
-                    (y * cell_size.y as usize) as f32,
-                ),
+                Vector2::new(x as f32 * cell_size.x, y as f32 * cell_size.y),
                 cell_size,
                 color,
             );
@@ -57,11 +105,8 @@ fn render(automaton: &gol::Gol, mut d: RaylibDrawHandle) {
     // Draw vertical line borders between cells
     for x in 1..automaton.get_x_count() {
         d.draw_line_ex(
-            Vector2::new((x * cell_size.x as usize) as f32, 0.0),
-            Vector2::new(
-                (x * cell_size.x as usize) as f32,
-                d.get_screen_height() as f32,
-            ),
+            Vector2::new(x as f32 * cell_size.x, 0.0),
+            Vector2::new(x as f32 * cell_size.x, d.get_screen_height() as f32),
             2.0,
             Color::DARKGRAY,
         );
@@ -70,13 +115,29 @@ fn render(automaton: &gol::Gol, mut d: RaylibDrawHandle) {
     // Draw horizontal line borders between cells
     for y in 1..automaton.get_y_count() {
         d.draw_line_ex(
-            Vector2::new(0.0, (y * cell_size.y as usize) as f32),
-            Vector2::new(
-                d.get_screen_width() as f32,
-                (y * cell_size.y as usize) as f32,
-            ),
+            Vector2::new(0.0, y as f32 * cell_size.y),
+            Vector2::new(d.get_screen_width() as f32, y as f32 * cell_size.y),
             2.0,
             Color::DARKGRAY,
         );
     }
+
+    // Draw pause indicator if paused
+    if automaton.paused {
+        draw_pause(&mut d, Vector2::new(75.0, 75.0));
+    }
+}
+
+pub fn draw_pause(d: &mut RaylibDrawHandle, pos: Vector2) {
+    let rect_width = 14.0;
+    d.draw_rectangle_v(
+        pos,
+        Vector2::new(rect_width, rect_width * 4.0),
+        Color::new(186, 39, 32, 255),
+    );
+    d.draw_rectangle_v(
+        Vector2::new(pos.x + (rect_width * 2.0), pos.y),
+        Vector2::new(rect_width, rect_width * 4.0),
+        Color::new(186, 39, 32, 255),
+    );
 }

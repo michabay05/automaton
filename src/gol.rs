@@ -9,6 +9,8 @@ pub struct Gol {
     cells: Vec<GolCells>,
     x_count: usize,
     y_count: usize,
+    cell_size: (f32, f32),
+    pub paused: bool,
 }
 
 impl Gol {
@@ -17,6 +19,8 @@ impl Gol {
             cells: vec![GolCells::Dead; x_count * y_count],
             x_count,
             y_count,
+            cell_size: (0.0, 0.0),
+            paused: false,
         }
     }
 
@@ -26,6 +30,22 @@ impl Gol {
 
     pub fn get_y_count(&self) -> usize {
         self.y_count
+    }
+
+    pub fn randomize(&mut self) {
+        for col in 0..self.get_x_count() {
+            for row in 0..self.get_y_count() {
+                if rand::random::<f32>() < 0.2 {
+                    self.toggle(col, row);
+                }
+            }
+        }
+    }
+
+    pub fn restart(&mut self) {
+        for el in &mut self.cells {
+            *el = GolCells::Dead;
+        }
     }
 
     pub fn is_alive(&self, col: usize, row: usize) -> bool {
@@ -69,9 +89,9 @@ impl Gol {
         let neighbors = self.count_neighbors(col, row);
         let ind = self.coord_to_ind(col, row);
         let is_cell_alive = self.cells[ind] == GolCells::Alive;
-        if is_cell_alive && (neighbors == 2 || neighbors == 3) {
-            return true;
-        } else if !is_cell_alive && neighbors == 3 {
+        if (is_cell_alive && (neighbors == 2 || neighbors == 3))
+            || (!is_cell_alive && neighbors == 3)
+        {
             return true;
         }
         false
@@ -86,10 +106,11 @@ impl Gol {
                 }
                 let curr_col = col as i32 + off_x;
                 let curr_row = row as i32 + off_y;
-                if self.is_in_bound(curr_col, true) && self.is_in_bound(curr_row, false) {
-                    if self.is_alive(curr_col as usize, curr_row as usize) {
-                        neighbors += 1;
-                    }
+                if self.is_in_bound(curr_col, true)
+                    && self.is_in_bound(curr_row, false)
+                    && self.is_alive(curr_col as usize, curr_row as usize)
+                {
+                    neighbors += 1;
                 }
             }
         }
