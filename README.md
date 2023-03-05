@@ -16,5 +16,10 @@ $ cargo run
 |<kbd>R</kbd>| Reset the state of all the cells|
 |Left Mouse Button| Toggle the state of the cell under the cursor|
 
+## List of Cellular Automata implemented
+- [x] Conway's game of life
+- [ ] Rule 110
+- [ ] Rule 90
+
 ## Resources used
 - [Raylib for Graphics](https://crates.io/crates/raylib)
